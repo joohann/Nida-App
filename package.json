@@ -1,0 +1,26 @@
+{
+  "name": "nida-v2",
+  "version": "2.1.0",
+  "description": "Nida v2 — Islamic prayer-time card (HA + Capacitor + Electron)",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "sync": "npm run build && npx cap sync",
+    "android": "npm run sync && npx cap open android",
+    "ios": "npm run sync && npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/local-notifications": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

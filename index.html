@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1200" />
+  <title>Nida</title>
+  <style>
+    html, body { margin: 0; padding: 0; background: #1a1200; min-height: 100dvh; }
+  </style>
+</head>
+<body>
+  <nida-card></nida-card>
+
+  <!--
+    Pad: ./www/nida/nida-card.js (relatief aan root)
+    Rollup bundelt dit als ES-module — de resolveId plugin in vite.config.js
+    stuurt de './core/*'-imports om naar /core/.
+
+    GEEN /capacitor.js hier — dat injecteert `npx cap sync` zelf.
+  -->
+  <script type="module" src="./www/nida/nida-card.js"></script>
+</body>
+</html>

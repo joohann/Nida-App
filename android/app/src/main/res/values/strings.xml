@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nida</string>
+    <string name="title_activity_main">Nida</string>
+    <string name="package_name">com.nida.prayertimes</string>
+    <string name="custom_url_scheme">com.nida.prayertimes</string>
+</resources>

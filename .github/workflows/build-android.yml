@@ -1,0 +1,110 @@
+name: Build signed release APK
+
+on:
+  push:
+    tags:
+      - "android-v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & sign APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Copy sound files to dist
+        run: |
+          mkdir -p dist/nida/sounds
+          cp -r www/nida/sounds/. dist/nida/sounds/ 2>/dev/null || true
+
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode \
+            > android/app/nida-release.jks
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Set Gradle JDK
+        run: |
+          echo "org.gradle.java.home=$(dirname $(dirname $(readlink -f $(which java))))" \
+            >> android/gradle.properties
+
+      - name: Build release APK
+        working-directory: android
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=nida-release.jks \
+            -Pandroid.injected.signing.store.password="${{ secrets.STORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}" \
+            --no-daemon
+
+      - name: Rename APK
+        run: |
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             artifacts/nida-${VERSION}.apk
+          echo "APK_PATH=artifacts/nida-${VERSION}.apk" >> $GITHUB_ENV
+          echo "APK_NAME=nida-${VERSION}.apk"           >> $GITHUB_ENV
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APK_NAME }}
+          path: ${{ env.APK_PATH }}
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Nida Android ${{ github.ref_name }}"
+          body: |
+            ## Nida Android ${{ github.ref_name }}
+
+            ### Installation
+            1. Download `${{ env.APK_NAME }}` below.
+            2. On your Android phone: **Settings → Security → Unknown sources** → enable.
+            3. Open the APK on your phone and install.
+          files: ${{ env.APK_PATH }}
+          draft: false
+          prerelease: false
+
+      - name: Remove keystore from runner
+        if: always()
+        run: rm -f android/app/nida-release.jks
